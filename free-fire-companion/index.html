@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<meta name="description" content="Unofficial Garena Free Fire companion: character directory with stats, special abilities and damage parameters.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FF Companion — Free Fire Character Directory</title>
+<style>
+/* ============ RESET / BASE ============ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14; --bg2:#12151d; --card:#161a24; --card2:#1b2030;
+  --line:#262c3b; --tx:#e8ecf4; --tx2:#9aa3b5; --tx3:#6b7488;
+  --acc:#ff6d00; --acc2:#ff9800; --gold:#ffb020;
+  --red:#ff4d4f; --green:#22c55e; --cyan:#38bdf8; --indigo:#818cf8; --purple:#c084fc;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--tx);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.45; overflow-x:hidden;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+input{font:inherit;color:inherit}
+img,svg{display:block;max-width:100%}
+::selection{background:var(--acc);color:#fff}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#2c3347;border-radius:4px}
+
+/* ============ HEADER ============ */
+.app-header{
+  position:sticky;top:0;z-index:40;
+  padding:calc(var(--sat) + 10px) 14px 10px;
+  background:linear-gradient(180deg,#10131b 85%,rgba(16,19,27,0));
+  display:flex;align-items:center;gap:10px;
+}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand svg{width:30px;height:30px;flex:none}
+.brand-t{font-weight:800;font-size:17px;letter-spacing:.6px;white-space:nowrap}
+.brand-t small{display:block;font-size:9.5px;font-weight:600;color:var(--acc2);letter-spacing:2.2px;margin-top:-2px}
+.hbtns{margin-left:auto;display:flex;gap:8px}
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .15s;
+}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:18px;height:18px;stroke:var(--tx2);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn.on{background:#2a1c08;border-color:var(--acc)}
+.icon-btn.on svg{stroke:var(--acc2)}
+
+/* ============ VIEWS ============ */
+.view{display:none;padding:4px 14px 96px;max-width:1100px;margin:0 auto}
+.view.on{display:block}
+
+/* ============ FILTERS ============ */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--tx3);fill:none;stroke-width:2}
+.search{
+  width:100%;padding:12px 12px 12px 38px;border-radius:12px;
+  background:var(--card);border:1px solid var(--line);outline:none;
+  font-size:15px;transition:border-color .15s;
+}
+.search::placeholder{color:var(--tx3)}
+.search:focus{border-color:var(--acc)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;-ms-overflow-style:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:600;
+  background:var(--card);border:1px solid var(--line);color:var(--tx2);white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s,transform .12s;
+}
+.chip:active{transform:scale(.94)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip.fav.on{background:var(--gold);border-color:var(--gold);color:#1a1000}
+.chip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.count-row{display:flex;justify-content:space-between;align-items:center;margin:2px 0 10px}
+.count{font-size:12px;color:var(--tx3);font-weight:600;letter-spacing:.4px}
+
+/* ============ CHARACTER GRID ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}
+@media(min-width:560px){.grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+.card{
+  position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:13px 12px 12px;text-align:left;overflow:hidden;
+  transition:transform .14s ease,border-color .15s;
+  contain:layout style;
+}
+.card:active{transform:scale(.97)}
+.card::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--rc,var(--acc))}
+.card .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.avatar{
+  width:52px;height:52px;flex:none;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:17px;color:#fff;letter-spacing:.5px;
+  text-shadow:0 1px 3px rgba(0,0,0,.45);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+}
+.cname{font-weight:700;font-size:14.5px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alias{font-size:11px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.skill-n{font-size:11.5px;color:var(--tx2);margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skill-n b{color:var(--acc2);font-weight:600}
+.badges{display:flex;gap:5px;flex-wrap:wrap}
+.b{font-size:9.5px;font-weight:700;letter-spacing:.7px;padding:3px 7px;border-radius:6px}
+.b.act{background:#2a1c08;color:var(--acc2);border:1px solid #4a2f0a}
+.b.pas{background:#0b2231;color:var(--cyan);border:1px solid #123b52}
+.b.role{background:transparent;color:var(--rc);border:1px solid var(--rc)}
+.b.tier{background:#22283a;color:var(--tx2);border:1px solid var(--line)}
+.b.tier.S{color:var(--gold);border-color:#5a4212;background:#241a05}
+.b.tier.A{color:var(--acc2);border-color:#4a2f0a;background:#241503}
+.star{
+  position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;transition:transform .12s;
+}
+.star:active{transform:scale(.85)}
+.star svg{width:15px;height:15px;stroke:none;fill:#3a4152}
+.card .star.on svg{fill:var(--gold)}
+.empty{padding:60px 20px;text-align:center;color:var(--tx3)}
+.empty b{display:block;font-size:16px;color:var(--tx2);margin-bottom:6px}
+
+/* ============ DETAIL SHEET ============ */
+.backdrop{
+  position:fixed;inset:0;background:rgba(5,7,12,.72);z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .22s ease;
+}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  max-height:92vh;max-width:760px;margin:0 auto;
+  background:var(--bg2);border:1px solid var(--line);border-bottom:0;
+  border-radius:20px 20px 0 0;overflow:hidden;
+  display:flex;flex-direction:column;
+  transform:translateY(103%);transition:transform .28s cubic-bezier(.2,.9,.3,1);
+  will-change:transform;
+}
+.sheet.on{transform:translateY(0)}
+@media(min-width:760px){
+  .sheet{bottom:auto;top:50%;border-radius:20px;border-bottom:1px solid var(--line);
+    transform:translateY(30px);opacity:0;transition:transform .25s ease,opacity .2s}
+  .sheet.on{transform:translateY(-50%);opacity:1}
+}
+.sheet-head{
+  position:relative;padding:22px 18px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(160deg,var(--g1,#26160a),var(--g2,#12151d) 70%);
+  flex:none;
+}
+.close{
+  position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;
+  background:rgba(13,15,20,.6);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+.close svg{width:15px;height:15px;stroke:var(--tx2);stroke-width:2.4;stroke-linecap:round}
+.sh-top{display:flex;align-items:center;gap:14px}
+.sh-top .avatar{width:68px;height:68px;font-size:22px;border-radius:17px}
+.sh-name{font-size:22px;font-weight:800;line-height:1.1}
+.sh-alias{font-size:12.5px;color:var(--acc2);font-weight:600;margin:2px 0 8px}
+.sh-badges{display:flex;gap:6px;flex-wrap:wrap}
+.sh-badges .b{font-size:10.5px;padding:4px 9px}
+.sheet-body{overflow-y:auto;padding:16px 18px calc(24px + var(--sab));-webkit-overflow-scrolling:touch}
+.sec{margin-bottom:20px;content-visibility:auto;contain-intrinsic-size:auto 260px}
+.sec-h{
+  display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:1.6px;
+  color:var(--acc2);margin-bottom:11px;text-transform:uppercase;
+}
+.sec-h::before{content:"";width:14px;height:2px;background:var(--acc);border-radius:2px}
+.sec-h .tag{margin-left:auto;font-size:10px;letter-spacing:.5px;color:var(--tx3);text-transform:none;font-weight:600}
+.bio{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bio-item{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 11px}
+.bio-item .k{font-size:10px;color:var(--tx3);letter-spacing:1px;font-weight:700;text-transform:uppercase}
+.bio-item .v{font-size:13px;font-weight:600;margin-top:3px}
+.bars{margin-top:10px;display:grid;gap:9px}
+.bar-row{display:grid;grid-template-columns:92px 1fr 30px;align-items:center;gap:9px}
+.bar-row .bl{font-size:11.5px;color:var(--tx2);font-weight:600}
+.bar{height:7px;border-radius:4px;background:#232a3c;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),var(--gold));
+  transform-origin:left;transform:scaleX(0);transition:transform .5s cubic-bezier(.2,.8,.3,1)}
+.bar.on i{transform:scaleX(var(--p))}
+.bar-row .bv{font-size:11.5px;font-weight:700;color:var(--acc2);text-align:right}
+.meta-row{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.meta-pill{flex:1;min-width:130px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:9px 12px}
+.meta-pill .k{font-size:10px;color:var(--tx3);letter-spacing:.8px;font-weight:700}
+.meta-pill .v{font-size:13.5px;font-weight:800;margin-top:2px}
+.meta-pill .v .st{color:var(--gold);letter-spacing:1px;font-size:12px}
+.abl-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.abl-t{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.abl-name{font-size:16.5px;font-weight:800}
+.abl-desc{font-size:13.5px;color:var(--tx2);margin:10px 0;line-height:1.55}
+.abl-desc b{color:var(--tx)}
+.scal-note{font-size:11.5px;color:var(--tx3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.scal-note b{color:var(--cyan);font-weight:700}
+.params{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.param{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 11px}
+.param .k{font-size:10px;color:var(--tx3);letter-spacing:.8px;font-weight:700;text-transform:uppercase}
+.param .v{font-size:14.5px;font-weight:800;color:var(--acc2);margin-top:3px}
+.param .v.wh{color:var(--tx)}
+.tips{list-style:none;display:grid;gap:8px}
+.tips li{
+  font-size:13px;color:var(--tx2);background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:10px 12px 10px 34px;position:relative;line-height:1.5;
+}
+.tips li::before{
+  content:"▸";position:absolute;left:13px;top:9px;color:var(--acc);font-size:13px;font-weight:800;
+}
+.tips li b{color:var(--tx)}
+.syn-box{
+  margin-top:10px;background:linear-gradient(135deg,#1d1408,#161a24);
+  border:1px solid #3a2c10;border-radius:12px;padding:12px 13px;font-size:13px;line-height:1.55;
+}
+.syn-box .k{font-size:10px;letter-spacing:1.2px;color:var(--gold);font-weight:800;text-transform:uppercase;display:block;margin-bottom:4px}
+.syn-box b{color:var(--acc2)}
+.note{font-size:11px;color:var(--tx3);margin-top:14px;line-height:1.5}
+
+/* ============ WEAPONS ============ */
+.wcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.wtable{width:100%;border-collapse:collapse;font-size:13px}
+.wtable th{
+  text-align:left;padding:11px 10px;font-size:10.5px;letter-spacing:1.2px;color:var(--tx3);
+  text-transform:uppercase;background:var(--card2);border-bottom:1px solid var(--line);
+  position:sticky;top:0;white-space:nowrap;
+}
+.wtable th.sortable{cursor:pointer;color:var(--tx2)}
+.wtable th.sortable.on{color:var(--acc2)}
+.wtable td{padding:10px;border-bottom:1px solid #1e2330;vertical-align:top}
+.wtable tr:last-child td{border-bottom:0}
+.wname{font-weight:700;white-space:nowrap}
+.wcls{font-size:10px;font-weight:700;letter-spacing:.6px;padding:3px 7px;border-radius:6px;white-space:nowrap}
+.wcls.ar{background:#241503;color:var(--acc2)} .wcls.smg{background:#0b2231;color:var(--cyan)}
+.wcls.sni{background:#231027;color:#e879f9} .wcls.mar{background:#101f0d;color:#4ade80}
+.wcls.shot{background:#301010;color:#fb7185} .wcls.pis{background:#1b2030;color:#a5b4fc}
+.wcls.lau{background:#33230b;color:#fbbf24}
+.dmg-v{font-weight:800;color:var(--gold);font-size:14px}
+.dmg-bar{width:64px;height:5px;background:#232a3c;border-radius:3px;margin-top:5px;overflow:hidden}
+.dmg-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--gold));border-radius:3px}
+.wnote{font-size:11.5px;color:var(--tx3);display:block;margin-top:2px;max-width:220px}
+@media(max-width:520px){
+  .wtable .col-range,.wtable .col-note{display:none}
+  .wnote{max-width:none}
+}
+.w-head{display:flex;align-items:center;gap:9px;margin:4px 0 12px}
+.w-head h2{font-size:16px}
+.w-sub{font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5}
+
+/* ============ ABOUT ============ */
+.about-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.about-card h3{font-size:14px;font-weight:800;margin-bottom:9px;color:var(--acc2)}
+.about-card p{font-size:13px;color:var(--tx2);line-height:1.6}
+.about-card a{color:var(--cyan);text-decoration:none;font-weight:600;word-break:break-all}
+.about-card ul{margin:8px 0 0 16px;font-size:13px;color:var(--tx2);line-height:1.8}
+
+/* ============ BOTTOM NAV ============ */
+.nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:45;
+  display:flex;justify-content:center;gap:4px;
+  padding:8px 12px calc(8px + var(--sab));
+  background:rgba(13,15,20,.94);border-top:1px solid var(--line);
+}
+.nav-btn{
+  flex:1;max-width:170px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 4px;border-radius:11px;color:var(--tx3);font-size:10.5px;font-weight:700;letter-spacing:.4px;
+  transition:color .15s,background .15s;
+}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.on{color:var(--acc2);background:#221405}
+
+/* ============ PERFORMANCE MODES ============ */
+body.lite *,body.lite *::before,body.lite *::after{
+  transition:none!important;animation:none!important;scroll-behavior:auto!important;
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2c1 4-3 5.2-3 8.5 0 1.5 1 2.5 1.5 2.5S8 14.4 8 12.8C6.8 14 6 15.7 6 17.3 6 20 8.7 22 12 22s6-2 6-4.7c0-1.5-.6-2.9-1.6-4.2-.4 1-.9 1.9-2.4 2.4.6-3.7-2-6.5-2-8.3 0-1.7 0-3.2 0-5.2z" fill="#ff6d00"/>
+      <path d="M12.5 15.5c2 .4 2.8 1.9 2.8 3.1 0 1.8-1.5 3.4-3.3 3.4" stroke="#ffb020" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="brand-t">FF&nbsp;COMPANION<small>FIRE GUIDE</small></div>
+  </div>
+  <div class="hbtns">
+    <button class="icon-btn" id="btnDice" aria-label="Random character" title="Random character">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <button class="icon-btn" id="btnLite" aria-label="Toggle Lite mode (disable animations)" title="Lite mode — disables animations for low-end phones">
+      <svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= ROSTER ================= -->
+  <section class="view on" id="view-roster">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input class="search" id="search" type="search" placeholder="Search character, skill…" autocomplete="off" enterkeyhint="search">
+    </div>
+    <div class="chips" id="typeChips">
+      <button class="chip on" data-t="all">All skills</button>
+      <button class="chip" data-t="active"><span class="dot" style="background:var(--acc2)"></span>Active</button>
+      <button class="chip" data-t="passive"><span class="dot" style="background:var(--cyan)"></span>Passive</button>
+    </div>
+    <div class="chips" id="roleChips">
+      <button class="chip on" data-r="all">All roles</button>
+      <button class="chip" data-r="Assault"><span class="dot" style="background:var(--red)"></span>Assault</button>
+      <button class="chip" data-r="Support"><span class="dot" style="background:var(--green)"></span>Support</button>
+      <button class="chip" data-r="Recon"><span class="dot" style="background:var(--cyan)"></span>Recon</button>
+      <button class="chip" data-r="Tank"><span class="dot" style="background:var(--indigo)"></span>Tank</button>
+      <button class="chip" data-r="Specialist"><span class="dot" style="background:var(--purple)"></span>Specialist</button>
+      <button class="chip fav" data-r="__fav">★ Favorites</button>
+    </div>
+    <div class="count-row"><span class="count" id="count"></span></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- ================= WEAPONS ================= -->
+  <section class="view" id="view-weapons">
+    <div class="w-head">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="#ffb020" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
+      <h2>Weapon Damage Parameters</h2>
+    </div>
+    <p class="w-sub">Approximate base body-shot damage per shot. Tap <b>Damage</b> to sort. Real values shift between patches and depend on range, armor and attachments — always sanity-check in the training ground.</p>
+    <div class="wcard">
+      <table class="wtable">
+        <thead>
+          <tr>
+            <th>Weapon</th>
+            <th class="sortable on" id="sortDmg">Damage ▼</th>
+            <th>Fire rate</th>
+            <th class="col-range">Range</th>
+            <th class="col-note">Notes</th>
+          </tr>
+        </thead>
+        <tbody id="wBody"></tbody>
+      </table>
+    </div>
+    <div class="about-card">
+      <h3>Reading the numbers</h3>
+      <p>Headshots multiply base damage; helmets and vests reduce what lands. High fire-rate guns (MP40, Vector) win <b>DPS races</b> under 10&nbsp;m, while the AWM and M82B trade speed for one-punch damage and gloo-wall breaking. Use this table to match weapon damage to your character: EP and healing characters (K, Alok, Jota) extend fights, so mid-DPS weapons benefit most.</p>
+    </div>
+  </section>
+
+  <!-- ================= ABOUT ================= -->
+  <section class="view" id="view-about">
+    <div class="about-card">
+      <h3>About this app</h3>
+      <p>An unofficial fan-made companion for Garena Free Fire. Browse every character with detailed sections for <b>profile stats</b>, <b>special abilities</b> and <b>damage &amp; skill parameters</b>, plus a weapon damage database to fine-tune your loadouts and squad strategy.</p>
+    </div>
+    <div class="about-card">
+      <h3>Built to never hang on mobile</h3>
+      <ul>
+        <li>Single self-contained file — zero downloads, zero network calls, opens instantly even offline</li>
+        <li>No frameworks or heavy libraries — pure lightweight JavaScript</li>
+        <li>Debounced search and one-pass batched rendering</li>
+        <li>Only GPU-friendly animations (transform/opacity)</li>
+        <li>Lite mode (⚡ in the header) disables all animation on low-end phones</li>
+        <li>Honors your system reduce-motion setting</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>How to use it</h3>
+      <ul>
+        <li>Tap any character for stats, ability details, damage parameters and strategy tips</li>
+        <li>Star ★ characters to build a personal favorites shortlist</li>
+        <li>Filter by Active/Passive skills or roles to plan squad comps</li>
+        <li>Tap the dice for a random pick when you can't decide</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>Data &amp; sources</h3>
+      <p>Ability values are community-sourced figures at max skill level and change with patches (OB48+ era). Verify exact numbers in-game. Reference guides: <a href="https://www.sportsdunia.com/gaming/free-fire-characters" rel="noopener">SportsDunia character list</a> · <a href="https://skycoach.gg/blog/free-fire/articles/free-fire-characters-tier-list" rel="noopener">Skycoach tier list</a> · <a href="https://www.bluestacks.com/blog/game-guides/free-fire-battlegrounds/ff-character-guide-en.html" rel="noopener">BlueStacks character guide</a> · <a href="https://www.gamsgo.com/blog/free-fire-characters-tier-list" rel="noopener">GamsGO tier list</a>.</p>
+      <p class="note">This app is fan-made and not affiliated with, endorsed by, or sponsored by Garena. Free Fire and all character names are trademarks of their respective owners.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ================= DETAIL SHEET ================= -->
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Character details"></div>
+
+<nav class="nav" id="nav">
+  <button class="nav-btn on" data-v="roster">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>
+    Characters
+  </button>
+  <button class="nav-btn" data-v="weapons">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
+    Weapons
+  </button>
+  <button class="nav-btn" data-v="about">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
+    About
+  </button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+/* ==================== DATA ==================== */
+/* r=role, t=tier, s=skill{type,cd,dur,desc,scal}, p=params, b=bio, bars=[surv,dmg,util],
+   br/cs=meta stars, tips, syn=synergy, wpn=weapon pairing */
+var CH = [
+{id:"alok",n:"Alok",al:"DJ Alok",r:"Support",t:"S",s:{name:"Drop the Beat",type:"active",cd:"~45s",dur:"10s",desc:"Drops the beat and creates a 5 m aura that restores <b>5 HP/s</b> for 10 seconds and boosts movement speed by <b>15%</b> for you and all allies inside.",scal:"Healing and speed bonus rise with skill level"},p:[["Healing","5 HP/s"],["Duration","10s"],["Aura radius","5 m"],["Move speed","+15%"],["Cooldown","~45s"]],b:[["Occupation","International DJ"],["Known for","Booyah Day anthem sets"],["Style","Aura support"]],bars:[7,4,10],br:5,cs:5,tips:["Pop the beat right before a push — the 10s window covers an entire close-range fight.","Stand inside your own aura while wall-banging; healing continues while you shoot."],syn:"Core of every sustain comp — stack with K for an EP + HP engine.",wpn:"MP40 / Groza for aura uptime brawls"},
+{id:"k",n:"K",al:"Captain Booyah",r:"Support",t:"S",s:{name:"Master of All",type:"active",cd:"~20s",dur:"—",desc:"Two modes. <b>Jiujitsu</b>: allies within 6 m convert EP to HP at a <b>+500%</b> rate. <b>Psychology</b>: you recover <b>2 EP every 3s</b> up to 150 EP. Switching modes takes 3s.",scal:"EP regen and conversion rate scale with level"},p:[["EP regen","2 / 3s"],["EP cap","150"],["Conversion","+500%"],["Mode range","6 m"],["Swap time","3s"]],b:[["Occupation","Professor & TV host"],["Known for","EP economy master"],["Style","Dual-mode support"]],bars:[8,4,9],br:5,cs:5,tips:["Bank EP in Psychology mode between fights, then flip to Jiujitsu as your squad pushes.","K turns EP items into a whole-team resource — carry at least one EP source."],syn:"Pairs with Kapella and Alok for the classic triple-heal core.",wpn:"Any — his value is team sustain"},
+{id:"chrono",n:"Chrono",al:"The Time-Turner",r:"Tank",t:"S",s:{name:"Time Turner",type:"active",cd:"~180s",dur:"~6s",desc:"Creates a force field that blocks up to <b>600 damage</b> from enemies for about 6 seconds. You can fire out of it, and movement speed rises <b>+15%</b> while it holds.",scal:"Shield HP and duration scale with level; long cooldown"},p:[["Shield HP","600"],["Duration","~6s"],["Move speed","+15%"],["Blocks","Enemy fire"],["Cooldown","~180s"]],b:[["Occupation","Time-bending superstar"],["Known for","Ultimate defensive bubble"],["Style","Shield tank"]],bars:[9,5,7],br:5,cs:4,tips:["Save it for third-party defense, revives, or when a grenade lands at your feet.","You shoot through your own shield — use it as an aggressive reload window."],syn:"Combine with Dimitri zones to make unbreakable revive bunkers.",wpn:"M82B — shoot from inside the bubble"},
+{id:"dimitri",n:"Dimitri",al:"The Scientist",r:"Support",t:"S",s:{name:"Healing Heartbeat",type:"active",cd:"~60s",dur:"~12s",desc:"Creates a 3.5 m healing zone. Allies (and you) inside recover <b>3 HP/s</b>, and anyone knocked inside the zone can <b>self-recover</b> without help.",scal:"Duration and healing scale with level"},p:[["Healing","3 HP/s"],["Zone radius","3.5 m"],["Duration","~12s"],["Self-revive","Yes"],["Cooldown","~60s"]],b:[["Occupation","Young scientist"],["Known for","First self-revive skill"],["Style","Zone healer"]],bars:[8,4,10],br:5,cs:5,tips:["Drop the zone before the fight starts — pre-placed healing wins trades.","In Clash Squad it denies area: enemies must fight inside your healing field or retreat."],syn:"Skyler breaks the walls enemies hide behind; Dimitri zones hold the ground.",wpn:"UMP / Groza mid-range hold"},
+{id:"kassie",n:"Kassie",al:"Electro Medic",r:"Support",t:"S",s:{name:"Electro Therapy",type:"active",cd:"~45s",dur:"—",desc:"Forms an electro-bond with an ally, granting continuous passive healing. Re-casting <b>overcharges</b> the bond for stronger healing.",scal:"Bond healing grows with level; overcharge boosts it further"},p:[["Bond heal","≈2–5 HP/s"],["Re-cast","Overcharge"],["Targets","1 ally"],["Type","Sustained"],["Cooldown","~45s"]],b:[["Occupation","Electro-punk medic"],["Known for","Bond-based healing"],["Style","Tether support"]],bars:[6,4,9],br:5,cs:4,tips:["Keep the bond on your entry fragger — healing follows them into the fight.","Overcharge the bond right before a push for the strongest burst."],syn:"Bond a Jota rusher for nearly unkillable frontline sustain.",wpn:"Support SMG — UMP or MP5"},
+{id:"skyler",n:"Skyler",al:"The Riptide CEO",r:"Assault",t:"A",s:{name:"Riptide Rhythm",type:"active",cd:"~40s",dur:"—",desc:"Sends a sonic wave forward that destroys up to <b>5 gloo walls</b> in a line. Every gloo wall you deploy restores <b>HP</b>, turning your own walls into healing stations.",scal:"Wave range and wall-heal scale with level"},p:[["Walls broken","5"],["Wave range","~50 m"],["Heal per wall","~4 HP"],["Wave CD","~40s"],["Type","Utility nuke"]],b:[["Occupation","Corporate CEO"],["Known for","#1 counter to gloo-wall metas"],["Style","Wall-breaker"]],bars:[6,6,9],br:4,cs:5,tips:["Spam gloo walls mid-fight — each placement heals you and adds cover.","Hold the wave until enemies turtle, then delete their entire wall line."],syn:"With Xayne you can strip any bunker in seconds.",wpn:"MP40 for rushing after waves"},
+{id:"wukong",n:"Wukong",al:"The Monkey King",r:"Recon",t:"A",s:{name:"Camouflage",type:"active",cd:"~50s",dur:"~15s",desc:"Transform into a bush for up to <b>15 seconds</b>. Enemies lose track of you completely — movement breaks nothing, but attacking ends the disguise.",scal:"Duration scales with level; cooldown resets faster at max"},p:[["Duration","~15s"],["Form","Bush"],["Reveal on","Attack"],["Cooldown","~50s"],["Visibility","Squad-only"]],b:[["Occupation","Trickster warrior"],["Known for","Bush-fication"],["Style","Flank specialist"]],bars:[6,5,8],br:4,cs:3,tips:["Flank beside real bushes — your disguise is nearly undetectable there.","Best escape tool in the game: break line of sight, morph, rotate."],syn:"Moco tags enemies; Wukong flanks the tagged target unseen.",wpn:"M1887 — one shot from the bush"},
+{id:"xayne",n:"Xayne",al:"Xtreme Athlete",r:"Assault",t:"A",s:{name:"Xtreme Encounter",type:"active",cd:"~100s",dur:"~15s",desc:"Gain <b>+80 temporary HP</b> and deal <b>+100% damage to gloo walls and shields</b> for the duration — a built-in entry kit for cracking camped squads.",scal:"Temp HP and duration scale with level"},p:[["Temp HP","+80"],["Gloo dmg","+100%"],["Duration","~15s"],["Cooldown","~100s"],["Type","Entry steroid"]],b:[["Occupation","Extreme sports star"],["Known for","Gloo-wall shredding"],["Style","Hard entry"]],bars:[7,8,6],br:4,cs:5,tips:["Activate the instant before entry — 80 HP absorbs an entire shotgun blast.","In CS modes use it to open the site by melting the defensive walls."],syn:"Follow Skyler's wave for wall-free entries.",wpn:"M1014 for close wall-crack fights"},
+{id:"hayato",n:"Hayato",al:"Bushido Blade",r:"Assault",t:"A",s:{name:"Bushido",type:"passive",cd:"—",dur:"Always",desc:"Every bit of HP you lose sharpens your blade: armor penetration rises as your HP drops, reaching up to <b>+10%</b> at low health.",scal:"Penetration scales with missing HP"},p:[["Armor pen","up to +10%"],["Trigger","HP loss"],["Type","Passive"],["Uptime","Always on"],["Peak value","Low HP"]],b:[["Occupation","Modern samurai"],["Known for","Berserk-style scaling"],["Style","Duelling brawler"]],bars:[6,9,4],br:4,cs:4,tips:["Don't fear fighting at half HP — that's exactly where Hayato peaks.","Best on brawlers who trade hits instead of sniping safely."],syn:"K or Alok sustain lets him fight longer inside the pen-boost zone.",wpn:"SKS / FAMAS mid-range duels"},
+{id:"jota",n:"Jota",al:"Kung-Fu Star",r:"Assault",t:"A",s:{name:"Sustained Raids",type:"passive",cd:"—",dur:"Always",desc:"Landing hits with SMGs, pistols or shotguns restores HP; knocking an enemy down restores up to <b>20% of your max HP</b>.",scal:"Heal per hit and knockdown restore scale with level"},p:[["Knock heal","~20% max HP"],["Trigger","SMG/Shotgun hits"],["Type","Passive"],["Uptime","On hit"],["Best range","Close"]],b:[["Occupation","Martial arts movie star"],["Known for","Lifesteal brawling"],["Style","Sustain rusher"]],bars:[8,8,4],br:5,cs:5,tips:["Trade hits aggressively — every landed pellet is free healing.","Chain knocks in squad wipes to full-reset your HP between targets."],syn:"Alok aura + Jota hits = the classic unkillable rush duo.",wpn:"MP40 / M1014 — maximum hits per second"},
+{id:"jai",n:"Jai",al:"The Raging Reload",r:"Assault",t:"A",s:{name:"Raging Reload",type:"passive",cd:"—",dur:"Always",desc:"Knocking down an enemy instantly reloads about <b>45%</b> of your magazine — no animation, no vulnerability window.",scal:"Reload percentage scales with level"},p:[["Auto-reload","~45% mag"],["Trigger","Knockdown"],["Type","Passive"],["Animation","None"],["Uptime","Per knock"]],b:[["Occupation","Special forces operative"],["Known for","Zero-downtime chains"],["Style","Multi-kill hunter"]],bars:[6,8,5],br:4,cs:4,tips:["Reload-cancel discipline matters less — use knocks as your reload timer.","Best with high-DPS low-mag weapons where reloads hurt most."],syn:"With Alok speed boosts, Jai squads snowball multi-kills.",wpn:"Vector / MP40 — small mags, huge DPS"},
+{id:"kelly",n:"Kelly",al:"The Sprinter",r:"Assault",t:"B",s:{name:"Dash",type:"passive",cd:"—",dur:"Always",desc:"Sprinting speed increases by up to <b>+6%</b>. The reworked version adds a <b>first-shot damage bonus</b> when you fire right after sprinting.",scal:"Sprint bonus and first-shot damage scale with level"},p:[["Sprint speed","+6%"],["First shot","Bonus dmg (Swift)"],["Type","Passive"],["Trigger","Sprint → fire"],["Uptime","Always"]],b:[["Occupation","Track athlete"],["Known for","Rotations and peek-shots"],["Style","Mobility pick"]],bars:[5,7,5],br:3,cs:3,tips:["Sprint-peek corners: the first-shot bonus rewards peek-firing.","Faster rotations mean better loot routes and third-party positioning."],syn:"Combine with Jai or Jota for mobile rush squads.",wpn:"M1887 sprint-peek one-shots"},
+{id:"laura",n:"Laura",al:"Sharpshooter",r:"Recon",t:"B",s:{name:"Sharpshooter",type:"passive",cd:"—",dur:"Always",desc:"Accuracy while scoped improves by up to <b>+35%</b> — tighter spread on every scoped weapon.",scal:"Accuracy bonus scales with level"},p:[["Scoped accuracy","+35%"],["Type","Passive"],["Applies to","Scoped weapons"],["Uptime","Always"],["Role","Precision"]],b:[["Occupation","Marksmanship instructor"],["Known for","Scoped consistency"],["Style","Backline sniper"]],bars:[4,6,6],br:3,cs:2,tips:["Pair with high-zoom marksman rifles to land distant headshots.","The bonus also helps scoped SMGs and ARs in mid-range sprays."],syn:"Moco intel + Laura precision deletes targets through windows.",wpn:"Kar98k / M14 scoped"},
+{id:"moco",n:"Moco",al:"Hacker Queen",r:"Recon",t:"A",s:{name:"Hacker's Eye",type:"passive",cd:"—",dur:"~5s",desc:"Enemies you shoot get <b>tagged</b> — their movement appears on the minimap for up to 5 seconds. At higher levels the tag is <b>shared with your whole squad</b>.",scal:"Tag duration and squad-sharing unlock with level"},p:[["Tag duration","~5s"],["Squad share","Lv 4+"],["Trigger","Any hit"],["Type","Passive"],["Uptime","On hit"]],b:[["Occupation","Elite hacker"],["Known for","Wall-bang intel"],["Style","Information warfare"]],bars:[5,6,9],br:4,cs:3,tips:["Tag before the fight: pre-fire through walls at tagged movers.","One Moco tag gives the entire squad a minimap hack — huge in finals."],syn:"Feed Skyler/Homer comps the intel they need.",wpn:"Woodpecker / VSS — fast tag application"},
+{id:"rafael",n:"Rafael",al:"Silent Killer",r:"Recon",t:"B",s:{name:"Dead Silent",type:"passive",cd:"—",dur:"Always",desc:"Sniper and marksman shots are <b>silenced</b> — they never ping the enemy minimap. Enemies you knock <b>bleed out much faster</b>, punishing solo-queue revives.",scal:"Bleed-out acceleration scales with level"},p:[["Silenced shots","Yes"],["Bleed-out","~80% faster"],["Applies to","Sniper/Marksman"],["Type","Passive"],["Uptime","Always"]],b:[["Occupation","Professional assassin"],["Known for","Ghost-sniping"],["Style","Lone marksman"]],bars:[5,7,6],br:3,cs:2,tips:["Your shots create no minimap ping — enemies can't locate you from the shot itself.","Downed enemies die faster, so finish the knock pressure instead of chasing the kill."],syn:"Lone-wolf pick; pairs with Moco tags for finishing information.",wpn:"AWM / Kar98k from hidden angles"},
+{id:"a124",n:"A124",al:"Battle Android",r:"Assault",t:"B",s:{name:"Thrill of Battle",type:"passive",cd:"~60s",dur:"Instant",desc:"Instantly converts stored EP into HP — a self-administered adrenaline shot on a cooldown, no conversion time needed.",scal:"Conversion efficiency scales with level"},p:[["EP → HP","Instant"],["Cooldown","~60s"],["Type","Passive"],["Best use","Pre-fight burst"],["Uptime","On CD"]],b:[["Occupation","Combat android"],["Known for","EP-to-HP injection"],["Style","Tech fighter"]],bars:[6,6,4],br:3,cs:3,tips:["Bank EP mushrooms and convert right before engaging.","Sudden 50+ HP swings bait enemies into re-peeking a 'dead' target."],syn:"Works with any EP source; natural partner to Miguel's EP-on-kill.",wpn:"AK — forgiving with burst sustain"},
+{id:"antonio",n:"Antonio",al:"Gang Leader",r:"Tank",t:"B",s:{name:"Gangster's Spirit",type:"passive",cd:"—",dur:"Always",desc:"Spawn into every match or round with up to <b>+30 bonus HP</b> — a bigger health bar from the first second.",scal:"Bonus HP scales with level"},p:[["Bonus HP","+30"],["When","On spawn"],["Type","Passive"],["Best mode","Clash Squad"],["Uptime","Always"]],b:[["Occupation","Street gang leader"],["Known for","Head-start durability"],["Style","Early brawler"]],bars:[7,5,3],br:3,cs:4,tips:["In CS, the extra 30 HP wins round-one rifle duels.","Zone-edge play is safer — you survive one more tick than opponents."],syn:"Any comp benefits; strongest in CS pistol/first rounds.",wpn:"SPAS12 round-one aggression"},
+{id:"miguel",n:"Miguel",al:"Crazy Slayer",r:"Support",t:"B",s:{name:"Crazy Slayer",type:"passive",cd:"—",dur:"Always",desc:"Every kill grants up to <b>~80 EP</b>, passively fueling your EP pool for later conversions or K-team synergy.",scal:"EP per kill scales with level"},p:[["EP per kill","~80"],["Type","Passive"],["Best use","EP banking"],["Uptime","On kill"],["Feed for","K / A124"]],b:[["Occupation","Elite soldier"],["Known for","EP snowballing"],["Style","Self-sufficient fighter"]],bars:[6,6,5],br:3,cs:3,tips:["Play for early kills to bank a full EP bar before zone four.","Combine with EP-conversion characters — he's their fuel line."],syn:"Perfect battery for K or A124 on your squad.",wpn:"Groza — reliable kill-securing AR"},
+{id:"luqueta",n:"Luqueta",al:"Hat-Trick Hero",r:"Tank",t:"B",s:{name:"Hat Trick",type:"passive",cd:"—",dur:"Always",desc:"Each kill raises your <b>max HP by +25</b>, stacking up to <b>+50 total</b> — your health bar literally grows mid-match.",scal:"Per-kill bonus and cap scale with level"},p:[["Max HP","+25 / kill"],["Stack cap","+50"],["Type","Passive"],["Trigger","Kill"],["Uptime","Rest of match"]],b:[["Occupation","Football star"],["Known for","Snowballing HP"],["Style","Early-game carry"]],bars:[7,6,4],br:4,cs:3,tips:["Hunt early kills in hot drops — 250 HP by mid-game is brutal.","Extra max HP multiplies with percentage healing like Alok's aura."],syn:"Alok + Luqueta: bigger pool, faster fill.",wpn:"XM8 — easy early-kills AR"},
+{id:"caroline",n:"Caroline",al:"Shotgun Dancer",r:"Assault",t:"C",s:{name:"Agility",type:"passive",cd:"—",dur:"Always",desc:"Movement speed increases by up to <b>+5%</b> while holding a shotgun — strafe and close distance faster in close quarters.",scal:"Speed bonus scales with level"},p:[["Speed (shotgun)","+5%"],["Type","Passive"],["Applies to","Shotguns"],["Uptime","While equipped"],["Best range","Close"]],b:[["Occupation","Dancer"],["Known for","Shotgun mobility"],["Style","CQB flanker"]],bars:[5,6,3],br:2,cs:3,tips:["Strafe-dance in building fights — the speed edge dodges shotgun pellets.","Pairs with fast ADS shotguns for aggressive room clears."],syn:"With Jota's lifesteal you become a hard-to-pin CQB threat.",wpn:"M1014 mobile spraying"},
+{id:"ford",n:"Ford",al:"Iron Will",r:"Tank",t:"C",s:{name:"Iron Will",type:"passive",cd:"—",dur:"Always",desc:"Damage taken outside the safe zone drops by up to <b>~24%</b> — the zone itself hurts you less than anyone else.",scal:"Zone damage reduction scales with level"},p:[["Zone damage","−24%"],["Type","Passive"],["Applies to","Blue zone"],["Uptime","Always"],["Best phase","Late game"]],b:[["Occupation","Veteran soldier"],["Known for","Zone resistance"],["Style","Late-game anchor"]],bars:[6,4,3],br:3,cs:1,tips:["Abuse early zone-edge third parties — you out-survive the blue.","Lets you hold outside-zone flanks other squads can't take."],syn:"Zone-heavy comps; pair with healers for full outside play.",wpn:"Any — value is positional"},
+{id:"paloma",n:"Paloma",al:"Arms Dealer",r:"Support",t:"C",s:{name:"Arms-dealing",type:"passive",cd:"—",dur:"Always",desc:"Carries up to <b>120 rounds of AR ammo</b> that take zero inventory space — a personal supply line for the whole squad.",scal:"Free ammo capacity scales with level"},p:[["Free AR ammo","120"],["Inventory cost","Zero"],["Type","Passive"],["Shares to","Squadmates"],["Uptime","Always"]],b:[["Occupation","Arms dealer"],["Known for","Ammo logistics"],["Style","Quartermaster"]],bars:[5,4,6],br:3,cs:2,tips:["Drop ammo for squad ARs and free your bag for meds and grenades.","Never lose a fight to an empty mag mid-final-circle."],syn:"Fuel for Jai and Hayato AR-heavy loadouts.",wpn:"AK / M4A1 ammo economy"},
+{id:"shani",n:"Shani",al:"Gear Recycler",r:"Tank",t:"C",s:{name:"Gear Recycle",type:"passive",cd:"—",dur:"Always",desc:"Kills repair your armor by roughly <b>+30 durability</b> and help upgrade gear — your vest heals itself as you fight.",scal:"Repair amount scales with level"},p:[["Armor repair","~+30 / kill"],["Gear upgrades","Yes"],["Type","Passive"],["Trigger","Kill"],["Uptime","On kill"]],b:[["Occupation","Combat engineer"],["Known for","Self-repairing armor"],["Style","Frontline grinder"]],bars:[7,5,3],br:3,cs:3,tips:["Fight through squads — each kill re-arms your vest for the next one.","Armor repairs stack with vest finds: end matches near full durability."],syn:"Synergy with rush comps that chain knocks.",wpn:"UMP — consistent kill securing"},
+{id:"kla",n:"Kla",al:"Muay Thai Master",r:"Specialist",t:"C",s:{name:"Muay Thai",type:"passive",cd:"—",dur:"Always",desc:"Fist damage increases by up to <b>+400%</b> — the punch is genuinely lethal. A meme with real one-punch highlights.",scal:"Fist damage scales with level"},p:[["Fist damage","+400%"],["Type","Passive"],["Applies to","Melee"],["Uptime","Always"],["Best use","Humiliation / eco"]],b:[["Occupation","Muay Thai champion"],["Known for","One-punch clips"],["Style","Melee specialist"]],bars:[4,7,2],br:2,cs:2,tips:["Landing Gloo Walls into punches is a classic CS round-one cheese.","Fun pick — but bring a real weapon for ranked."],syn:"Surprise CS eco-round pick alongside Antonio.",wpn:"Your fists. Then an M1887."},
+{id:"maxim",n:"Maxim",al:"The Glutton",r:"Support",t:"C",s:{name:"Gluttony",type:"passive",cd:"—",dur:"Always",desc:"Uses medkits and mushrooms up to <b>~20% faster</b> — every heal animation is shorter and safer.",scal:"Consumable speed scales with level"},p:[["Heal speed","+20%"],["Applies to","Meds & mushrooms"],["Type","Passive"],["Uptime","Always"],["Best use","Fight-reset speed"]],b:[["Occupation","Competitive eater"],["Known for","Fastest heals in game"],["Style","Sustain specialist"]],bars:[6,4,4],br:2,cs:2,tips:["The heal race decides close fights — you always finish first.","Mushroom routes give Maxim near-constant regen on the move."],syn:"Backup healer when no Alok on the squad.",wpn:"Any — his edge is timing"},
+{id:"nikita",n:"Nikita",al:"Firearms Expert",r:"Assault",t:"B",s:{name:"Firearms Expert",type:"passive",cd:"—",dur:"Always",desc:"SMG reloads become up to <b>~24% faster</b> — less downtime, more bullets in the air.",scal:"Reload speed scales with level"},p:[["SMG reload","−24% time"],["Type","Passive"],["Applies to","SMGs"],["Uptime","Always"],["Best use","DPS uptime"]],b:[["Occupation","Bodyguard"],["Known for","SMG efficiency"],["Style","CQB specialist"]],bars:[5,7,4],br:3,cs:3,tips:["Fast reloads win SMG mirror matches — force close trades.","Great with extended-mag SMGs in long CS fights."],syn:"Pairs with Jai's reload-on-knock for zero-downtime shooting.",wpn:"UMP / Vector reload spam"},
+{id:"misha",n:"Misha",al:"Racing Ace",r:"Specialist",t:"C",s:{name:"Afterburner",type:"passive",cd:"—",dur:"Always",desc:"Vehicle speed rises up to <b>+20%</b> and you take reduced damage while driving — the safest hot-drop driver on the map.",scal:"Speed and damage reduction scale with level"},p:[["Drive speed","+20%"],["Vehicle damage","Reduced"],["Type","Passive"],["Applies to","Driving"],["Uptime","Always"]],b:[["Occupation","Street racer"],["Known for","Getaway driving"],["Style","Rotations & taxi"]],bars:[5,4,4],br:2,cs:1,tips:["Take the driver seat — your squad survives ramming and chases.","Faster rotations win the loot race on big maps."],syn:"Driver for any squad; fun with Notora's vehicle healing.",wpn:"Vehicle-mounted aggression"},
+{id:"notora",n:"Notora",al:"Racer's Blessing",r:"Support",t:"C",s:{name:"Racer's Blessing",type:"passive",cd:"—",dur:"Always",desc:"Squadmates riding in your vehicle <b>regenerate HP</b> — your car is an ambulance on wheels.",scal:"Healing rate scales with level"},p:[["Squad heal","In vehicle"],["Type","Passive"],["Applies to","Passengers"],["Uptime","While driving"],["Best use","Between fights"]],b:[["Occupation","Biker medic"],["Known for","Mobile healing"],["Style","Road support"]],bars:[5,3,5],br:2,cs:2,tips:["Heal up between zones without stopping — drive laps around the circle.","Combine with a Misha driver for the ultimate ambulance squad."],syn:"Misha drives, Notora heals — meme-worthy but effective.",wpn:"Shotgun for drive-by finishes"},
+{id:"olivia",n:"Olivia",al:"Combat Medic",r:"Support",t:"B",s:{name:"Healing Touch",type:"passive",cd:"—",dur:"Always",desc:"Teammates you revive come back with up to <b>+70 bonus HP</b> — your pick-ups return fighting-fit instead of critical.",scal:"Revive bonus scales with level"},p:[["Revive bonus","+70 HP"],["Type","Passive"],["Trigger","Revive"],["Uptime","Per revive"],["Best mode","Squad BR"]],b:[["Occupation","Field medic"],["Known for","Strongest revives"],["Style","Dedicated medic"]],bars:[6,3,6],br:3,cs:4,tips:["Your revived teammate can immediately re-peek — enemies expect a weak target.","Prioritize reviving over shooting; your value multiplies per revive."],syn:"Stack with Kapella for tanky revive comps.",wpn:"SMG self-defense while reviving"},
+{id:"kapella",n:"Kapella",al:"Healing Song",r:"Support",t:"A",s:{name:"Healing Song",type:"passive",cd:"—",dur:"Always",desc:"Healing effects on allies are amplified by up to <b>~25%</b>, and downed allies lose HP more slowly — the healer that makes other healers better.",scal:"Amplification scales with level"},p:[["Healing amp","+~25%"],["Downed HP loss","Slower"],["Type","Passive"],["Applies to","Allied healing"],["Uptime","Always"]],b:[["Occupation","Pop idol"],["Known for","Amplified healing"],["Style","Support-of-supports"]],bars:[6,3,8],br:3,cs:4,tips:["Her passive multiplies Alok's aura and medkits — stack supports around her.","Slower bleed-out gives you a bigger window for clutch revives."],syn:"Force-multiplier for Alok / K / Dimitri comps.",wpn:"Any support weapon — UMP"},
+{id:"joseph",n:"Joseph",al:"Nutty Movement",r:"Assault",t:"B",s:{name:"Nutty Movement",type:"passive",cd:"—",dur:"Brief",desc:"Taking damage triggers a burst of up to <b>+20% movement speed</b> — getting shot literally makes you harder to hit.",scal:"Speed burst scales with level"},p:[["Speed on hit","+20%"],["Trigger","Taking damage"],["Type","Passive"],["Uptime","On damage"],["Best use","Peek escapes"]],b:[["Occupation","Neuroscientist"],["Known for","Reactive speed"],["Style","Slippery duelist"]],bars:[6,6,4],br:3,cs:3,tips:["Use the speed burst to swing wide — enemies track you at normal strafe speed.","Strong in 1v1 peek battles around cover."],syn:"Pairs with Jota's lifesteal for slippery sustain.",wpn:"MP40 strafe-spraying"},
+{id:"dasha",n:"Dasha",al:"Party Rebel",r:"Assault",t:"B",s:{name:"Partying On",type:"passive",cd:"—",dur:"Always",desc:"Reduces recoil build-up and fall damage — drops hurt up to <b>50% less</b> and your spray stays flatter for longer.",scal:"Recoil and fall reductions scale with level"},p:[["Fall damage","−50%"],["Recoil build","Reduced"],["Max recoil","Lower"],["Type","Passive"],["Uptime","Always"]],b:[["Occupation","Stunt double"],["Known for","Recoil control"],["Style","Spray controller"]],bars:[6,6,4],br:3,cs:3,tips:["Take high-ground rotations for free — fall damage barely registers.","Long sprays stay on target: favor high-capacity ARs."],syn:"Great with XM8 or Groza sustained sprays.",wpn:"XM8 / AK — recoil-heavy ARs"},
+{id:"steffie",n:"Steffie",al:"Graffiti Guardian",r:"Tank",t:"B",s:{name:"Painted Refuge",type:"passive",cd:"—",dur:"~5s",desc:"Paints a graffiti zone that reduces incoming damage for squadmates inside — up to ~<b>25% vs bullets</b>, plus explosive protection.",scal:"Damage reduction scales with level"},p:[["Bullet damage","−~25%"],["Zone duration","~5s"],["Explosive dmg","Reduced"],["Type","Zone passive"],["Best use","Holding angles"]],b:[["Occupation","Street artist"],["Known for","Damage-cut graffiti"],["Style","Area anchor"]],bars:[7,4,6],br:3,cs:4,tips:["Pre-paint choke points before squads push through them.","Zones plus gloo walls make near-immortal CS defensive positions."],syn:"Anchor beside Dimitri zones for stacked mitigation.",wpn:"M1014 holding painted sites"},
+{id:"nairi",n:"Nairi",al:"Ice Iron",r:"Support",t:"B",s:{name:"Ice Iron",type:"passive",cd:"—",dur:"Always",desc:"Gloo walls you deploy <b>self-repair</b>, regenerating durability over time — your cover refuses to be chipped away.",scal:"Regeneration rate scales with level"},p:[["Gloo regen","Over time"],["Type","Passive"],["Applies to","Your walls"],["Uptime","Always"],["Counter to","Chip damage"]],b:[["Occupation","Cryogenics engineer"],["Known for","Living walls"],["Style","Fortress builder"]],bars:[6,4,6],br:3,cs:3,tips:["Place walls early — the regen out-paces casual chip damage.","Annoying counter to Hector-style single-bullet wall breakers."],syn:"Bunker up with Steffie paint and Nairi walls.",wpn:"Any — utility is in the walls"},
+{id:"otho",n:"Otho",al:"Memory Mist",r:"Recon",t:"A",s:{name:"Memory Mist",type:"passive",cd:"—",dur:"—",desc:"Kills spread a memory mist that <b>reveals nearby enemies</b> on the minimap — every kill is a free radar sweep.",scal:"Reveal radius scales with level"},p:[["Reveal","On kill"],["Radius","~25 m"],["Targets","Nearby enemies"],["Type","Passive"],["Uptime","Per kill"]],b:[["Occupation","Memory scholar"],["Known for","Kill-triggered radar"],["Style","Chain intel"]],bars:[5,5,8],br:4,cs:3,tips:["After every knock, check the map — third parties glow before you hear them.","Multi-kill wipes reveal entire surviving squads instantly."],syn:"Feeds Homer / Moco intel-stacking comps.",wpn:"Fast-transition AR like FAMAS"},
+{id:"tatsuya",n:"Tatsuya",al:"Rebel Rush",r:"Assault",t:"A",s:{name:"Rebel Rush",type:"active",cd:"~26s",dur:"Instant",desc:"A lightning forward <b>dash</b> with two charges — blink across open fields, close gaps, or break an enemy's aim tracking instantly.",scal:"Cooldown drops and charges persist with level"},p:[["Charges","2"],["Dash","Forward burst"],["Cooldown","~26s"],["Cancels","Aim tracking"],["Type","Mobility active"]],b:[["Occupation","Street racer / rebel"],["Known for","Double-dash mobility"],["Style","Gap closer"]],bars:[6,8,6],br:4,cs:4,tips:["Dash through open ground snipers love — 2 charges cover huge distance.","Bait the enemy's first shot, then dash-strafe for the free kill window."],syn:"Follow-up dashes behind Skyler wall-breaks.",wpn:"M1887 dash-into-blast pattern"},
+{id:"kenta",n:"Kenta",al:"Swordman's Wrath",r:"Tank",t:"B",s:{name:"Swordman's Wrath",type:"active",cd:"—",dur:"—",desc:"Enters a defensive stance with a <b>frontal blade shield</b> that blocks incoming bullets from the front — a walking deployable cover.",scal:"Stance duration scales with level"},p:[["Frontal shield","Blocks bullets"],["Direction","Front only"],["Type","Active stance"],["Best use","Slow pushes"],["Weakness","Flanks"]],b:[["Occupation","Kendo master"],["Known for","Bullet-cutting stance"],["Style","Advancing wall"]],bars:[8,6,4],br:3,cs:4,tips:["Walk point through choke holds — your squad shoots from behind your stance.","Never turn your back mid-stance; the shield only faces forward."],syn:"Body-block for Moco or Laura backline shooters.",wpn:"SMG spray from behind the shield"},
+{id:"dbee",n:"D-Bee",al:"Bullet Beats",r:"Assault",t:"A",s:{name:"Bullet Beats",type:"passive",cd:"—",dur:"Always",desc:"While firing on the move you gain up to <b>+15% movement speed</b> and substantially <b>improved accuracy</b> — the run-and-gun specialist.",scal:"Speed and accuracy bonuses scale with level"},p:[["Move-firing speed","+15%"],["Accuracy","Greatly improved"],["Trigger","Firing + moving"],["Type","Passive"],["Uptime","Always"]],b:[["Occupation","Hip-hop dancer"],["Known for","Run-and-gun accuracy"],["Style","Mobile sprayer"]],bars:[6,8,5],br:4,cs:4,tips:["Never stop moving while shooting — standing still wastes your whole kit.","Sidestep-spray through mid-range fights; your spread barely blooms."],syn:"Pairs with Jota — mobile hits keep healing flowing.",wpn:"Vector / MP40 mobile spraying"},
+{id:"shirou",n:"Shirou",al:"Damage Delivered",r:"Recon",t:"A",s:{name:"Damage Delivered",type:"passive",cd:"—",dur:"Brief",desc:"The first enemy to hit you gets <b>secretly marked</b> — and your first shot back at them carries up to <b>+100% armor penetration</b>.",scal:"Penetration scales with level"},p:[["Armor pen","+100%"],["Trigger","First hit taken"],["Mark","Reveals attacker"],["Applies to","Your first shot"],["Type","Passive"]],b:[["Occupation","Courier / fighter"],["Known for","Revenge shot"],["Style","Counter-puncher"]],bars:[6,8,6],br:4,cs:4,tips:["Let them hit first — your return shot ignores their vest entirely.","Watch the mark direction to instantly locate unseen shooters."],syn:"Stacks with Hayato-style pen for vest-melting duels.",wpn:"M1887 / Desert Eagle one-taps"},
+{id:"maro",n:"Maro",al:"Falcon Fervor",r:"Recon",t:"A",s:{name:"Falcon Fervor",type:"passive",cd:"—",dur:"Always",desc:"Damage <b>increases with distance</b> — up to ~<b>+25%</b> at long range — and hits on marked enemies deal bonus damage.",scal:"Distance bonus scales with level"},p:[["Distance damage","up to +25%"],["Anti-mark bonus","Yes"],["Type","Passive"],["Best range","Long"],["Uptime","Always"]],b:[["Occupation","Falconer archer"],["Known for","Reverse damage falloff"],["Style","Long-range threat"]],bars:[5,8,5],br:3,cs:4,tips:["The farther the target, the harder you hit — hold long sightlines.","Synergizes with Moco tags: marked enemies take your bonus damage."],syn:"Moco tags feed Maro's marked-target bonus.",wpn:"AWM / M82B long-lane control"},
+{id:"homer",n:"Homer",al:"Beat Drop",r:"Recon",t:"A",s:{name:"Beat Drop",type:"active",cd:"~60s",dur:"—",desc:"Launches a <b>drone</b> that sticks to an enemy, jamming their sound perception and revealing their position on the minimap for your squad.",scal:"Drone effects scale with level"},p:[["Drone","Homing mark"],["Audio jam","Yes"],["Reveal","Minimap"],["Cooldown","~60s"],["Type","Intel active"]],b:[["Occupation","Drone engineer / DJ"],["Known for","Audio-revealing drone"],["Style","Squad coordinator"]],bars:[5,5,9],br:4,cs:3,tips:["Drone the hidden camper — your whole squad gets wall-bang coordinates.","The audio jam makes enemies deaf to your squad's push footsteps."],syn:"Otho and Moco complete the full-intel squad.",wpn:"Marksman rifles on revealed targets"},
+{id:"orion",n:"Orion",al:"Crimson Beacon",r:"Tank",t:"A",s:{name:"Crimson Beacon",type:"active",cd:"—",dur:"—",desc:"Activates a crimson shield that converts up to <b>~60% of damage taken into EP</b> — the more they shoot you, the more fuel you store.",scal:"Conversion rate scales with level"},p:[["Damage → EP","~60%"],["Form","Active shield"],["Best use","Tank focused fire"],["Type","Active"],["Uptime","While active"]],b:[["Occupation","Blood-sport champion"],["Known for","Damage absorption"],["Style","Aggro sponge"]],bars:[9,6,5],br:4,cs:4,tips:["Bait the enemy squad's burst, then convert it into an EP-fueled comeback.","Pairs beautifully with EP-consuming teammates like K or A124."],syn:"Battery tank for K / A124 EP engines.",wpn:"Groza — aggressive mid-range presence"},
+{id:"sonia",n:"Sonia",al:"Embodiment of Rage",r:"Assault",t:"A",s:{name:"Embodiment of Rage",type:"active",cd:"Long",dur:"—",desc:"On taking fatal damage, instead of being downed she enters a <b>Rage state</b> with a special weapon — a second life to fight back and secure the knock.",scal:"Rage duration scales with level; long cooldown"},p:[["Fatal damage →","Rage state"],["Special weapon","Yes"],["Cooldown","Long"],["Type","Active trigger"],["Best mode","Clash Squad"]],b:[["Occupation","Vigilante fighter"],["Known for","Defiant last stand"],["Style","Second-life duelist"]],bars:[8,8,4],br:4,cs:5,tips:["Play boldly — enemies who 'kill' you meet your rage form point-blank.","Best in CS clutch situations where every life counts double."],syn:"Clutch pick with Olivia revives for safety nets.",wpn:"Aggro SMG play that baits fights"},
+{id:"wolfrahh",n:"Wolfrahh",al:"Limelight",r:"Assault",t:"B",s:{name:"Limelight",type:"passive",cd:"—",dur:"Always",desc:"Incoming <b>headshot damage shrinks</b> (up to ~20% as your hype builds) at the cost of slightly increased limb damage taken.",scal:"Headshot reduction scales with in-match performance"},p:[["HS damage taken","up to −20%"],["Limb damage taken","Slightly up"],["Type","Passive"],["Best use","Anti-sniper"],["Uptime","Always"]],b:[["Occupation","E-sports prodigy"],["Known for","Headshot insurance"],["Style","Stream sniper"]],bars:[6,7,4],br:3,cs:3,tips:["Face AWM players with more confidence — their headshots hit softer.","Avoid being baited into weird-angle limb-shots where the drawback applies."],syn:"Good into sniper-heavy lobbies.",wpn:"MP40 brawling under sniper fire"},
+{id:"thiva",n:"Thiva",al:"Vital Vibes",r:"Support",t:"B",s:{name:"Vital Vibes",type:"passive",cd:"—",dur:"Always",desc:"Rescues teammates up to <b>~30% faster</b>, and allies you rescue return with bonus HP — the clutch medic's pick.",scal:"Rescue speed and bonus scale with level"},p:[["Rescue speed","+~30%"],["Rescued ally","Bonus HP"],["Type","Passive"],["Trigger","Revive"],["Best mode","Squad play"]],b:[["Occupation","Rhythm rescuer"],["Known for","Fastest rescues"],["Style","Clutch medic"]],bars:[6,3,6],br:3,cs:4,tips:["Revive during firefights — your speed beats most enemy re-peeks.","In CS, fast rescues swing man-advantage rounds instantly."],syn:"Pairs with Olivia for the double-medic squad.",wpn:"Shotgun cover-fire while reviving"},
+{id:"leon",n:"Leon",al:"Buzzer Beater",r:"Tank",t:"C",s:{name:"Buzzer Beater",type:"passive",cd:"—",dur:"—",desc:"After surviving a knockdown, Leon recovers up to <b>+30 HP</b> — every rescue leaves you healthier than expected.",scal:"Recovery scales with level"},p:[["Post-knock HP","+30"],["Trigger","Surviving a knock"],["Type","Passive"],["Best use","Second chances"],["Uptime","Per knock"]],b:[["Occupation","Basketball point guard"],["Known for","Comeback recovery"],["Style","Scrappy survivor"]],bars:[6,4,3],br:2,cs:2,tips:["Peek again after being revived — the HP buffer surprises re-peakers.","Solid beginner pick: mistakes cost less."],syn:"Works in any squad needing forgiveness.",wpn:"Any starter-friendly AR"},
+{id:"alvaro",n:"Alvaro",al:"Art of Demolition",r:"Specialist",t:"C",s:{name:"Art of Demolition",type:"passive",cd:"—",dur:"Always",desc:"Explosive damage rises up to <b>+25%</b> with a <b>+10% larger blast radius</b> — grenades and launchers become siege weapons.",scal:"Damage and radius scale with level"},p:[["Explosive dmg","+25%"],["Blast radius","+10%"],["Applies to","Grenades / launchers"],["Type","Passive"],["Best use","Bunker busting"]],b:[["Occupation","Demolitions expert"],["Known for","Grenade artistry"],["Style","Siege breaker"]],bars:[5,7,4],br:2,cs:3,tips:["Grenade behind gloo walls — the radius buff catches hiders.","M79 with Alvaro clears CS defensive spots solo."],syn:"Feeds zone-breaking comps alongside Skyler.",wpn:"M79 / grenade-heavy loadouts"},
+{id:"andrew",n:"Andrew",al:"Armor Specialist",r:"Tank",t:"C",s:{name:"Armor Specialist",type:"passive",cd:"—",dur:"Always",desc:"Your vest loses durability up to <b>~8% slower</b> — armor simply lasts longer under fire.",scal:"Durability preservation scales with level"},p:[["Vest durability loss","−8%"],["Type","Passive"],["Applies to","Vests"],["Uptime","Always"],["Best use","Long fights"]],b:[["Occupation","Police officer"],["Known for","Longer-lasting armor"],["Style","Steady brawler"]],bars:[6,5,2],br:2,cs:2,tips:["Small but free: over a long match it saves a whole vest's worth of durability.","Beginner-friendly passive with zero activation decisions."],syn:"Shani-style armor economy squads.",wpn:"Any — durability is universal"},
+{id:"clu",n:"Clu",al:"Tracing Steps",r:"Recon",t:"B",s:{name:"Tracing Steps",type:"active",cd:"~50s",dur:"~5s",desc:"Detects enemies (not prone or crouched) within <b>~50 m</b> and shows them on your minimap — shared with the whole squad at level 4+.",scal:"Range and squad-sharing scale with level"},p:[["Detection range","~50 m"],["Duration","~5s"],["Squad share","Lv 4+"],["Misses","Prone / crouched"],["Cooldown","~50s"]],b:[["Occupation","Private detective"],["Known for","Minimap scanner"],["Style","Scout support"]],bars:[5,4,8],br:3,cs:3,tips:["Ping before rotating — spot the campers ahead of your squad.","Enemies counter you by going prone: use that to read their position anyway."],syn:"Combine with Homer drones for total information control.",wpn:"Any mid-range AR while scouting"},
+{id:"oscar",n:"Oscar",al:"Night Vigilante",r:"Assault",t:"B",s:{name:"Valiant Dash",type:"active",cd:"—",dur:"—",desc:"A heroic forward <b>dash tackle</b> that knocks enemies back — student by day, vigilante by night (new in the OB48 era).",scal:"Dash power scales with level"},p:[["Dash","Tackle"],["Effect","Knockback"],["Type","Active"],["Best use","Disrupting holds"],["Era","OB48+"]],b:[["Occupation","Student / vigilante"],["Known for","Knockback entry"],["Style","Hero-play disruptor"]],bars:[6,7,5],br:3,cs:4,tips:["Dash enemies off high ground and building edges for environmental kills.","Interrupt enemies mid-heal or mid-scope with the knockback."],syn:"Disrupt into Tatsuya dashes for total chaos.",wpn:"SMG follow-up after tackles"},
+{id:"rin",n:"Rin Yagami",al:"Gale of Kunai",r:"Assault",t:"A",s:{name:"Gale of Kunai",type:"active",cd:"—",dur:"—",desc:"Summons a <b>kunai every 8 seconds</b> that automatically hunts enemies — a persistent auto-attacking spirit blade.",scal:"Kunai frequency and damage scale with level"},p:[["Kunai rate","1 / 8s"],["Targeting","Auto"],["Type","Active persistent"],["Best use","Zone pressure"],["Era","Modern era"]],b:[["Occupation","Shinobi warrior"],["Known for","Auto-seeking blades"],["Style","Supernatural assassin"]],bars:[6,8,6],br:4,cs:4,tips:["Kunai chip damage softens every duel before you even peek.","Enemies waste gloo walls dodging kunai — punish the openings."],syn:"Pairs with Maro chip damage for passively lethal lanes.",wpn:"FAMAS burst finishing"}
+];
+
+var WPN = [
+{n:"AWM",c:"sni",cls:"Sniper",d:180,rof:"Very low",rng:"Very long",note:"One-shot headshot potential; drop-only"},
+{n:"M82B",c:"sni",cls:"Sniper",d:120,rof:"Low",rng:"Long",note:"Shreds gloo walls & helmets"},
+{n:"M1887",c:"shot",cls:"Shotgun",d:100,rof:"Low (2 shells)",rng:"Very short",note:"Deadly one-two punch up close"},
+{n:"M79",c:"lau",cls:"Launcher",d:90,rof:"Low",rng:"Arcing",note:"Explosive AoE; Alvaro's best friend"},
+{n:"Kar98k",c:"sni",cls:"Sniper",d:90,rof:"Low",rng:"Long",note:"Reliable map-loot sniper"},
+{n:"M1014",c:"shot",cls:"Shotgun",d:92,rof:"Medium",rng:"Short",note:"Full-auto pellet stream"},
+{n:"SKS",c:"mar",cls:"Marksman",d:70,rof:"Medium",rng:"Long",note:"Fast follow-up marksman"},
+{n:"FAMAS",c:"ar",cls:"AR",d:62,rof:"Burst",rng:"Medium",note:"3-round burst; pin-point taps"},
+{n:"Groza",c:"ar",cls:"AR",d:61,rof:"High",rng:"Medium",note:"Airdrop AR king of DPS"},
+{n:"AK",c:"ar",cls:"AR",d:60,rof:"Medium",rng:"Medium",note:"Heavy hitter, heavy recoil"},
+{n:"Desert Eagle",c:"pis",cls:"Pistol",d:63,rof:"Low",rng:"Medium",note:"Pocket sniper sidearm"},
+{n:"SCAR",c:"ar",cls:"AR",d:55,rof:"Medium",rng:"Medium",note:"Steady all-rounder"},
+{n:"M4A1",c:"ar",cls:"AR",d:54,rof:"Medium",rng:"Medium",note:"Beginner-friendly accuracy"},
+{n:"M14",c:"mar",cls:"Marksman",d:53,rof:"High",rng:"Long",note:"Spam-friendly DMR"},
+{n:"XM8",c:"ar",cls:"AR",d:52,rof:"Medium",rng:"Medium",note:"Laser-flat spray pattern"},
+{n:"UMP",c:"smg",cls:"SMG",d:50,rof:"High",rng:"Short-medium",note:"Armor-friendly compromise SMG"},
+{n:"MP40",c:"smg",cls:"SMG",d:49,rof:"Very high",rng:"Short",note:"Highest DPS inside 10 m"},
+{n:"Vector",c:"smg",cls:"SMG",d:44,rof:"Very high",rng:"Short",note:"Blazing time-to-kill, tiny mag"}
+];
+
+var ROLES={Assault:"#ff4d4f",Support:"#22c55e",Recon:"#38bdf8",Tank:"#818cf8",Specialist:"#c084fc"};
+var GRAD=[["#f97316","#7c2d12"],["#22c55e","#14532d"],["#38bdf8","#0c4a6e"],["#a78bfa","#4c1d95"],["#f43f5e","#7f1d1d"],["#eab308","#713f12"],["#2dd4bf","#134e4a"],["#fb7185","#4c0519"]];
+var MAXD=180;
+
+/* ==================== STATE ==================== */
+var LS_FAV="ffc.favs", LS_LITE="ffc.lite";
+var favs={}, lite=false;
+try{favs=JSON.parse(localStorage.getItem(LS_FAV)||"{}")}catch(e){favs={}}
+try{lite=localStorage.getItem(LS_LITE)==="1"}catch(e){}
+var st={q:"",t:"all",r:"all",view:"roster",sortDesc:true};
+var $=function(id){return document.getElementById(id)};
+var grid=$("grid"),sheet=$("sheet"),backdrop=$("backdrop");
+
+/* ==================== HELPERS ==================== */
+function initials(n){var p=n.replace(/[^A-Za-z ]/g,"").split(" ").filter(Boolean);return ((p[0]||"")[0]||"?")+((p[1]||"")[0]||"")}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function stars(k){var s="";for(var i=0;i<5;i++)s+=i<k?"★":"☆";return s}
+
+/* ==================== ROSTER RENDER ==================== */
+function matches(c){
+  if(st.t!=="all"&&c.s.type!==st.t)return false;
+  if(st.r==="__fav"&&!favs[c.id])return false;
+  if(st.r!=="all"&&st.r!=="__fav"&&c.r!==st.r)return false;
+  if(st.q){
+    var q=st.q.toLowerCase();
+    if((c.n+" "+c.al+" "+c.s.name+" "+c.r+" "+c.t).toLowerCase().indexOf(q)<0)return false;
+  }
+  return true;
+}
+function renderGrid(){
+  var out=[],shown=0;
+  for(var i=0;i<CH.length;i++){
+    var c=CH[i];if(!matches(c))continue;shown++;
+    var g=GRAD[i%GRAD.length],rc=ROLES[c.r];
+    out.push(
+      '<button class="card" style="--rc:'+rc+'" data-id="'+c.id+'" aria-label="'+esc(c.n)+' details">'+
+        '<span class="star'+(favs[c.id]?" on":"")+'" data-fav="'+c.id+'" role="button" aria-label="Favorite">'+
+          '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L12 17.4l-5.8 3 1.1-6.4L2.6 9.4l6.5-.9z"/></svg>'+
+        '</span>'+
+        '<div class="top">'+
+          '<div class="avatar" style="background:linear-gradient(140deg,'+g[0]+','+g[1]+')">'+initials(c.n)+'</div>'+
+          '<div style="min-width:0"><div class="cname">'+esc(c.n)+'</div><div class="alias">'+esc(c.al)+'</div></div>'+
+        '</div>'+
+        '<div class="skill-n"><b>'+esc(c.s.name)+'</b> · '+c.r+'</div>'+
+        '<div class="badges">'+
+          '<span class="b '+(c.s.type==="active"?"act":"pas")+'">'+c.s.type.toUpperCase()+'</span>'+
+          '<span class="b role">'+c.r+'</span>'+
+          '<span class="b tier '+c.t+'">TIER '+c.t+'</span>'+
+        '</div>'+
+      '</button>');
+  }
+  grid.innerHTML=shown?out.join(""):'<div class="empty" style="grid-column:1/-1"><b>No characters found</b>Try a different search or filter.</div>';
+  $("count").textContent=shown+" / "+CH.length+" CHARACTERS";
+}
+
+/* ==================== DETAIL SHEET ==================== */
+function openSheet(id){
+  var c=null;
+  for(var i=0;i<CH.length;i++)if(CH[i].id===id){c=CH[i];break}
+  if(!c)return;
+  var gi=CH.indexOf(c),g=GRAD[gi%GRAD.length],rc=ROLES[c.r];
+  var bars=[["Survivability",c.bars[0]],["Damage",c.bars[1]],["Utility",c.bars[2]]];
+  var bh="",pl="";
+  for(var j=0;j<bars.length;j++){
+    bh+='<div class="bar-row"><span class="bl">'+bars[j][0]+'</span><span class="bar" data-p="'+bars[j][1]/10+'"><i style="--p:'+(bars[j][1]/10)+'"></i></span><span class="bv">'+bars[j][1]+'/10</span></div>';
+  }
+  for(j=0;j<c.p.length;j++){
+    pl+='<div class="param"><span class="k">'+esc(c.p[j][0])+'</span><div class="v">'+esc(c.p[j][1])+'</div></div>';
+  }
+  var bio="";
+  for(j=0;j<c.b.length;j++){
+    bio+='<div class="bio-item"><span class="k">'+esc(c.b[j][0])+'</span><div class="v">'+esc(c.b[j][1])+'</div></div>';
+  }
+  var tips="";
+  for(j=0;j<c.tips.length;j++){
+    tips+='<li>'+c.tips[j]+'</li>';
+  }
+  sheet.innerHTML=
+  '<div class="sheet-head" style="--g1:'+g[0]+'22;--g2:#12151d">'+
+    '<button class="close" id="shClose" aria-label="Close details"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+    '<div class="sh-top">'+
+      '<div class="avatar" style="background:linear-gradient(140deg,'+g[0]+','+g[1]+')">'+initials(c.n)+'</div>'+
+      '<div style="min-width:0">'+
+        '<div class="sh-name">'+esc(c.n)+'</div>'+
+        '<div class="sh-alias">'+esc(c.al)+'</div>'+
+        '<div class="sh-badges">'+
+          '<span class="b '+(c.s.type==="active"?"act":"pas")+'">'+c.s.type.toUpperCase()+'</span>'+
+          '<span class="b role" style="--rc:'+rc+'">'+c.r+'</span>'+
+          '<span class="b tier '+c.t+'">TIER '+c.t+'</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="sheet-body">'+
+    '<section class="sec"><h3 class="sec-h">Profile &amp; Stats</h3>'+
+      '<div class="bio">'+bio+'</div>'+
+      '<div class="bars">'+bh+'</div>'+
+      '<div class="meta-row">'+
+        '<div class="meta-pill"><span class="k">BATTLE ROYALE META</span><div class="v"><span class="st">'+stars(c.br)+'</span></div></div>'+
+        '<div class="meta-pill"><span class="k">CLASH SQUAD META</span><div class="v"><span class="st">'+stars(c.cs)+'</span></div></div>'+
+      '</div>'+
+    '</section>'+
+    '<section class="sec"><h3 class="sec-h">Special Ability<span class="tag">'+(c.s.type==="active"?"ACTIVE SKILL":"PASSIVE SKILL")+'</span></h3>'+
+      '<div class="abl-box">'+
+        '<div class="abl-t"><span class="abl-name">'+esc(c.s.name)+'</span>'+
+          (c.s.cd&&c.s.cd!=="—"?'<span class="b pas">CD '+esc(c.s.cd)+'</span>':"")+
+          (c.s.dur&&c.s.dur!=="—"&&c.s.dur!=="Always"?'<span class="b act">'+esc(c.s.dur)+'</span>':"")+
+        '</div>'+
+        '<p class="abl-desc">'+c.s.desc+'</p>'+
+        (c.s.scal?'<div class="scal-note">Scaling: <b>'+esc(c.s.scal)+'</b></div>':"")+
+      '</div>'+
+    '</section>'+
+    '<section class="sec"><h3 class="sec-h">Damage &amp; Skill Parameters<span class="tag">max level, approx.</span></h3>'+
+      '<div class="params">'+pl+'</div>'+
+      '<p class="note">Parameters are community-sourced figures at max skill level. Exact values change between patches — verify in-game.</p>'+
+    '</section>'+
+    '<section class="sec"><h3 class="sec-h">Strategy</h3>'+
+      '<ul class="tips">'+tips+'</ul>'+
+      '<div class="syn-box"><span class="k">Squad synergy</span>'+c.syn+'<br><br><b>Recommended weapons:</b> '+esc(c.wpn||"Any reliable loadout")+'</div>'+
+    '</section>'+
+  '</div>';
+  sheet.classList.add("on");backdrop.classList.add("on");
+  document.body.style.overflow="hidden";
+  requestAnimationFrame(function(){
+    var bs=sheet.querySelectorAll(".bar");
+    for(var k=0;k<bs.length;k++)bs[k].classList.add("on");
+  });
+  $("shClose").addEventListener("click",closeSheet);
+  $("shClose").focus();
+}
+function closeSheet(){
+  sheet.classList.remove("on");backdrop.classList.remove("on");
+  document.body.style.overflow="";
+}
+
+/* ==================== WEAPONS RENDER ==================== */
+function renderWeapons(){
+  var w=WPN.slice();
+  w.sort(function(a,b){return st.sortDesc?b.d-a.d:a.d-b.d});
+  var out=[];
+  for(var i=0;i<w.length;i++){
+    out.push('<tr><td><span class="wname">'+esc(w[i].n)+'</span></td>'+
+      '<td><span class="dmg-v">'+w[i].d+'</span><span class="dmg-bar"><i style="width:'+Math.round(w[i].d/MAXD*100)+'%"></i></span></td>'+
+      '<td>'+esc(w[i].rof)+'</td>'+
+      '<td class="col-range">'+esc(w[i].rng)+'</td>'+
+      '<td class="col-note"><span class="wcls '+w[i].c+'">'+w[i].cls.toUpperCase()+'</span><span class="wnote">'+esc(w[i].note)+'</span></td></tr>');
+  }
+  $("wBody").innerHTML=out.join("");
+  $("sortDmg").textContent="Damage "+(st.sortDesc?"▼":"▲");
+}
+
+/* ==================== EVENTS ==================== */
+// Search (debounced for low-end phones)
+var debT=null;
+$("search").addEventListener("input",function(){
+  var v=this.value;
+  clearTimeout(debT);
+  debT=setTimeout(function(){st.q=v.trim();renderGrid()},150);
+},{passive:true});
+
+// Filter chips — delegated
+$("typeChips").addEventListener("click",function(e){
+  var b=e.target.closest(".chip");if(!b)return;
+  var cs=this.children;for(var i=0;i<cs.length;i++)cs[i].classList.remove("on");
+  b.classList.add("on");st.t=b.getAttribute("data-t");renderGrid();
+});
+$("roleChips").addEventListener("click",function(e){
+  var b=e.target.closest(".chip");if(!b)return;
+  var cs=this.children;for(var i=0;i<cs.length;i++)cs[i].classList.remove("on");
+  b.classList.add("on");st.r=b.getAttribute("data-r");renderGrid();
+});
+
+// Grid — delegated: card opens sheet, star toggles favorite
+grid.addEventListener("click",function(e){
+  var s=e.target.closest("[data-fav]");
+  if(s){
+    e.stopPropagation();
+    var id=s.getAttribute("data-fav");
+    if(favs[id])delete favs[id];else favs[id]=1;
+    try{localStorage.setItem(LS_FAV,JSON.stringify(favs))}catch(err){}
+    s.classList.toggle("on",!!favs[id]);
+    if(st.r==="__fav")renderGrid();
+    return;
+  }
+  var card=e.target.closest(".card");
+  if(card)openSheet(card.getAttribute("data-id"));
+});
+
+// Sheet close: backdrop, Escape
+backdrop.addEventListener("click",closeSheet);
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&sheet.classList.contains("on"))closeSheet();
+},{passive:true});
+
+// Bottom nav
+$("nav").addEventListener("click",function(e){
+  var b=e.target.closest(".nav-btn");if(!b)return;
+  var v=b.getAttribute("data-v");if(v===st.view)return;
+  var bs=this.children;for(var i=0;i<bs.length;i++)bs[i].classList.remove("on");
+  b.classList.add("on");st.view=v;
+  var vs=["roster","weapons","about"];
+  for(i=0;i<vs.length;i++){
+    $("view-"+vs[i]).classList.toggle("on",vs[i]===v);
+  }
+  if(v==="weapons")renderWeapons();
+  window.scrollTo(0,0);
+});
+
+// Random character
+$("btnDice").addEventListener("click",function(){
+  if(st.view!=="roster"){
+    var nb=$("nav").querySelector('[data-v="roster"]');nb.click();
+  }
+  openSheet(CH[Math.floor(Math.random()*CH.length)].id);
+});
+
+// Lite mode toggle
+function applyLite(){document.body.classList.toggle("lite",lite);$("btnLite").classList.toggle("on",lite)}
+$("btnLite").addEventListener("click",function(){
+  lite=!lite;try{localStorage.setItem(LS_LITE,lite?"1":"0")}catch(e){}
+  applyLite();
+});
+
+// Weapon sort
+$("sortDmg").addEventListener("click",function(){st.sortDesc=!st.sortDesc;renderWeapons()});
+
+/* ==================== INIT ==================== */
+applyLite();
+renderGrid();
+})();
+</script>
+</body>
+</html>
